@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/yuzhench_time_schedule.dir/src/functionality.cpp.o -o yuzhench_time_schedule  -lcurses /usr/lib/x86_64-linux-gnu/libform.so 
