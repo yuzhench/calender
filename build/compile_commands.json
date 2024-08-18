@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/yuzhen/Desktop/ml_learn/calender/build",
+  "command": "/usr/bin/c++ -DDATA_DIR=\\\"/home/yuzhen/Desktop/ml_learn/calender/data\\\" -g -std=gnu++11 -o CMakeFiles/yuzhench_time_schedule.dir/src/functionality.cpp.o -c /home/yuzhen/Desktop/ml_learn/calender/src/functionality.cpp",
+  "file": "/home/yuzhen/Desktop/ml_learn/calender/src/functionality.cpp",
+  "output": "CMakeFiles/yuzhench_time_schedule.dir/src/functionality.cpp.o"
+}
+]

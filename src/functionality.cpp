@@ -25,34 +25,48 @@ enum MenuOption {
 char PASSWORD[100] = "cyz030518";
 
 // Function to load tasks from a file
-void load_tasks(std::map<std::string, std::vector<std::string>>& tasks, const std::string& filename, std::string CURR_TIME, WINDOW *menu_win) {
+void load_tasks(std::map<std::string, std::vector<std::string>>& tasks, const std::string& filename, WINDOW *menu_win) {
+    // std::cout << "start to load the file" << std::endl;
     std::ifstream file(filename);
     std::string line;
     if (file.is_open()) {
+        // std::cout << "start to load the file1" << std::endl;
         while (getline(file, line)) {
+            // std::cout << "start to load the file2" << std::endl;
+
             std::size_t pos = line.find(':');  // Find the position of the colon
             if (pos != std::string::npos) {
-                std::string key = line.substr(0, pos);
-                if (key == CURR_TIME){
-                    mvwprintw(menu_win, 20, 1, "load the file successfully ");
+                // std::cout << "start to load the file3" << std::endl;
 
-                    std::cout<<"this is the correct message" << std::endl;
-                    std::string valueString = line.substr(pos + 1);
-                    std::vector<std::string> values;
-                    std::stringstream ss(valueString);
-                    std::string item;
-                    while (getline(ss, item, ',')) {
-                        values.push_back(item);
-                    }
-                    tasks[key] = values;
+                std::string key = line.substr(0, pos);
+                // std::cout << "start to load the file4" << std::endl;
+                // std::cout << "the key is: "<< key << std::endl;
+                // std::cout << "the CURR_TIME is: "<< CURR_TIME << std::endl;
+                // std::cout << "start to load the file5" << std::endl;
+                // mvwprintw(menu_win, 20, 1, "load the file successfully ");
+
+                // std::cout<<"this is the correct message" << std::endl;
+                std::string valueString = line.substr(pos + 1);
+                std::vector<std::string> values;
+                std::stringstream ss(valueString);
+                std::string item;
+                while (getline(ss, item, ',')) {
+                    values.push_back(item);
                 }
+                tasks[key] = values;
+                
+                 
                  
             }
             else{
-                std::cout<<"this is the wrong message" << std::endl;
+                // std::cout<<"this is the wrong message" << std::endl;
             }
         }
         file.close();
+    }
+    else if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file for saving tasks." << std::endl;
+        return;
     }
    
 }
@@ -75,8 +89,8 @@ void save_tasks(std::map<std::string, std::vector<std::string>>& tasks,  const s
     }
     else if (!file.is_open()) {
         std::cerr << "Error: Unable to open file for saving tasks." << std::endl;
-    return;
-}
+        return;
+    }
 }
 
 // Function to display the current date
@@ -224,9 +238,9 @@ void delete_one_task(WINDOW *input_element_win,  std::map<std::string, std::vect
 int main(int argc, char **argv) {
     std::cout <<"Hellow world" << std::endl;
     std::map<std::string, std::vector<std::string>> tasks; 
-    tasks["8.27"] = {"task1", "task2"};
+    // tasks["2024-08-18"] = {"task1", "task2"};
 
-    std::vector<std::string> menu = {"Show today tasks", "Add a task", "Remove a task", "Mark as finished", "Mark as unfinished", "Delete one task", "Leave"};
+    std::vector<std::string> menu = {"Show today tasks", "Add a task", "Remove a task", "Mark as finished", "Mark as unfinished", "Delete today tasks", "Leave"};
 
     std::string get_current_date(); 
     std::string CURR_TIME = get_current_date();
@@ -235,7 +249,7 @@ int main(int argc, char **argv) {
 
 
     // Initialize ncurses
-    // initscr();
+    initscr();
     // clear();
     // noecho();
     // cbreak();
@@ -269,71 +283,71 @@ int main(int argc, char **argv) {
     bool running = true;
 
     //load the file:
-    // load_tasks(tasks, "src/history.txt", CURR_TIME, menu_win);
+    std::string filePath = std::string(DATA_DIR) + "/history.txt";
+    load_tasks(tasks, filePath, menu_win);
 
-    // while(running){
-    //     enum MenuOption choice = show_welcome_page(menu_win, menu);  // 显示菜单   
-    //     wrefresh(menu_win);
+    while(running){
+        enum MenuOption choice = show_welcome_page(menu_win, menu);  // 显示菜单   
+        wrefresh(menu_win);
 
-    //     // load_tasks(tasks, "src/history.txt", CURR_TIME);
+        // load_tasks(tasks, "src/history.txt", CURR_TIME);
 
 
-    //     switch (choice) {
-    //         case ShowTodayTasks:
-    //             show_tasks(task_win, tasks, CURR_TIME);
-    //             wrefresh(task_win);
-    //             break;
-    //         case AddTask:
-    //             add_task(input_element_win, tasks, CURR_TIME);
-    //             wrefresh(input_element_win);
+        switch (choice) {
+            case ShowTodayTasks:
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win);
+                break;
+            case AddTask:
+                add_task(input_element_win, tasks, CURR_TIME);
+                wrefresh(input_element_win);
 
-    //             //update the task
-    //             show_tasks(task_win, tasks, CURR_TIME);
-    //             wrefresh(task_win);
-    //             break;
-    //         case RemoveTask:
-    //             delete_one_task(input_element_win, tasks, CURR_TIME);
-    //             wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
-    //             show_tasks(task_win, tasks, CURR_TIME);
-    //             wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
-    //             break;
-    //         case MarkAsFinished:
-    //             std::cout << "Marking a task as finished." << std::endl;
-    //             break;
-    //         case MarkAsUnfinished:
-    //             std::cout << "Marking a task as unfinished." << std::endl;
-    //             break;
-    //         case DeleteAll:
-    //             delet_today_tasks(input_element_win,tasks, CURR_TIME);
-    //             refresh();
-    //             wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
-    //             show_tasks(task_win, tasks, CURR_TIME);
-    //             wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
+                //update the task
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win);
+                break;
+            case RemoveTask:
+                delete_one_task(input_element_win, tasks, CURR_TIME);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
+                break;
+            case MarkAsFinished:
+                std::cout << "Marking a task as finished." << std::endl;
+                break;
+            case MarkAsUnfinished:
+                std::cout << "Marking a task as unfinished." << std::endl;
+                break;
+            case DeleteAll:
+                delet_today_tasks(input_element_win,tasks, CURR_TIME);
+                refresh();
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
 
-    //             // delwin(input_element_win); // 删除窗口
-    //             // input_element_win = nullptr; // 确保指针被设置为nullptr防止悬挂引用
-    //             break;
-    //         case Leave:
-    //             // save_tasks(tasks, "src/history.txt");
-    //             running = false;
-    //             break;
-    //         default:
-    //             std::cout << "Invalid choice." << std::endl;
-    //             break;
-    //     }
+                // delwin(input_element_win); // 删除窗口
+                // input_element_win = nullptr; // 确保指针被设置为nullptr防止悬挂引用
+                break;
+            case Leave:
+                // save_tasks(tasks, "src/history.txt");
+                running = false;
+                break;
+            default:
+                std::cout << "Invalid choice." << std::endl;
+                break;
+        }
         
-    // }
+    }
      
-    // //  // Refresh to display changes
-    // // refresh();
+    //  // Refresh to display changes
+    // refresh();
 
-    // // // Wait for user input before exiting
-    // // getch();
+    // // Wait for user input before exiting
+    // getch();
 
-    std::string detail = tasks["8.27"][0];
-    std::cout << "tasks is: " << detail <<std::endl;
+    // std::string detail = tasks["2024-08-18"][0];
+    // std::cout << "tasks is: " << detail <<std::endl;
 
-    const std::string filePath = std::string(DATA_DIR) + "/history.txt";
     save_tasks(tasks, filePath);
     // End ncurses mode
     endwin();
