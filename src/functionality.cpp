@@ -194,6 +194,31 @@ void mark_as_finished(WINDOW *input_win, std::map<std::string, std::vector<std::
 
 }
 
+void mark_as_unfinished(WINDOW *input_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME ){
+    char task_index_char[100];
+    box(input_win,0,0);
+    mvwprintw(input_win,1,1, "enter the non-finished task index: ");
+    wrefresh(input_win);
+
+    wgetnstr(input_win, task_index_char, sizeof(task_index_char) - 1);
+    int task_index_int = std::stoi(task_index_char) - 1;
+
+
+    wclear(input_win);
+    box(input_win,0,0);
+    wrefresh(input_win);
+
+    if (task_index_int >= 0 && task_index_int < tasks[CURR_TIME].size()){
+        mvwprintw(input_win,1,1, ("make task " + std::string(task_index_char) + " non-finished").c_str());
+        tasks[CURR_TIME][task_index_int].second = false;
+    }
+    else{
+        mvwprintw(input_win,1,1, "invalid task index");
+    }
+    wrefresh(input_win);
+    napms(WAIT_TIME);
+}
+
  
 
 void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME) {
@@ -366,8 +391,11 @@ int main(int argc, char **argv) {
                 wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
                 break;
             case MarkAsUnfinished:
-                std::cout << "Marking a task as unfinished." << std::endl;
-                break;
+                mark_as_unfinished(input_element_win, tasks, CURR_TIME);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
+                break;                break;
             case DeleteAll:
                 delet_today_tasks(input_element_win,tasks, CURR_TIME);
                 refresh();
