@@ -24,15 +24,17 @@ enum MenuOption {
 
 char PASSWORD[100] = "cyz030518";
 
+const int WAIT_TIME = 500;
+
 // Function to load tasks from a file
-void load_tasks(std::map<std::string, std::vector<std::string>>& tasks, const std::string& filename, WINDOW *menu_win) {
+void load_tasks(std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, const std::string& filename, WINDOW *menu_win) {
     // std::cout << "start to load the file" << std::endl;
     std::ifstream file(filename);
     std::string line;
     if (file.is_open()) {
         // std::cout << "start to load the file1" << std::endl;
         while (getline(file, line)) {
-            // std::cout << "start to load the file2" << std::endl;
+            // std::cout << "start to load the fistd::make_pair<std::string(task),false>le2" << std::endl;
 
             std::size_t pos = line.find(':');  // Find the position of the colon
             if (pos != std::string::npos) {
@@ -47,13 +49,24 @@ void load_tasks(std::map<std::string, std::vector<std::string>>& tasks, const st
 
                 // std::cout<<"this is the correct message" << std::endl;
                 std::string valueString = line.substr(pos + 1);
-                std::vector<std::string> values;
+                std::vector<std::pair<std::string, bool>> taskList;
                 std::stringstream ss(valueString);
                 std::string item;
                 while (getline(ss, item, ',')) {
-                    values.push_back(item);
+                    std::size_t semicolon_pos = item.find(';');
+                    if (semicolon_pos != std::string::npos) {
+                        // Extract the task name and the boolean value as strings
+                        std::string task_name = item.substr(0, semicolon_pos);
+                        std::string bool_str = item.substr(semicolon_pos + 1);
+
+                        // Convert the boolean string to a boolean value
+                        bool task_status = (bool_str == "1" || bool_str == "true");
+
+                        // Add the task and its status to the task list
+                        taskList.push_back(std::make_pair(task_name, task_status));
+                    }
                 }
-                tasks[key] = values;
+                tasks[key] = taskList;
                 
                  
                  
@@ -72,14 +85,16 @@ void load_tasks(std::map<std::string, std::vector<std::string>>& tasks, const st
 }
 
 // Function to save tasks to a file
-void save_tasks(std::map<std::string, std::vector<std::string>>& tasks,  const std::string& filename) {
+void save_tasks(std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks,  const std::string& filename) {
     std::cout<< "start to save the task" << std::endl;
     std::ofstream file(filename);
     if (file.is_open()){
         for (const auto& pair : tasks) {
             file << pair.first << ":";
             for (size_t i = 0; i < pair.second.size(); ++i) {
-                file << pair.second[i];
+                file << pair.second[i].first;
+                file << ";";
+                file << pair.second[i].second;
                 if (i < pair.second.size() - 1) {
                     file << ",";
                 }
@@ -103,7 +118,7 @@ std::string get_current_date() {
 }
 
 // Function to add a new task
-void add_task(WINDOW *input_win, std::map<std::string, std::vector<std::string>>& tasks, std::string CURR_TIME ) {
+void add_task(WINDOW *input_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME ) {
     char task[100];
     wclear(input_win);
     box(input_win, 0,0);
@@ -113,7 +128,7 @@ void add_task(WINDOW *input_win, std::map<std::string, std::vector<std::string>>
    
     wgetnstr(input_win, task, sizeof(task) - 1);
    
-    tasks[CURR_TIME].push_back(std::string(task));
+    tasks[CURR_TIME].push_back(std::pair<std::string, bool>(task, false));
 
     wclear(input_win);
     // wrefresh(input_win);
@@ -153,9 +168,35 @@ enum MenuOption show_welcome_page(WINDOW *menu_win, std::vector<std::string> men
 }
 
 
+void mark_as_finished(WINDOW *input_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME ){
+    char task_index_char[100];
+    box(input_win,0,0);
+    mvwprintw(input_win,1,1, "enter the finished task index: ");
+    wrefresh(input_win);
+
+    wgetnstr(input_win, task_index_char, sizeof(task_index_char) - 1);
+    int task_index_int = std::stoi(task_index_char) - 1;
+
+
+    wclear(input_win);
+    box(input_win,0,0);
+    wrefresh(input_win);
+
+    if (task_index_int >= 0 && task_index_int < tasks[CURR_TIME].size()){
+        mvwprintw(input_win,1,1, ("make task " + std::string(task_index_char) + " finished").c_str());
+        tasks[CURR_TIME][task_index_int].second = true;
+    }
+    else{
+        mvwprintw(input_win,1,1, "invalid task index");
+    }
+    wrefresh(input_win);
+    napms(WAIT_TIME);
+
+}
+
  
 
-void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::string>>& tasks, std::string CURR_TIME) {
+void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME) {
     wclear(task_win);
     box(task_win,0,0);
     mvwprintw(task_win, 1, 1,(get_current_date() + " Tasks:").c_str());
@@ -169,14 +210,20 @@ void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::string>
     mvwprintw(task_win,1,35, "total_taskes: %d", tasks[CURR_TIME].size());
 
     for (int i = 0; i < tasks[CURR_TIME].size(); ++i) {
-        mvwprintw(task_win, y++, 1, "%d. %s", i + 1, tasks[CURR_TIME][i].c_str());
+        mvwprintw(task_win, y++, 1, "%d. %s", i + 1, tasks[CURR_TIME][i].first.c_str());
+        if (tasks[CURR_TIME][i].second){
+            mvwprintw(task_win, y - 1, 20, "%s", "finished");
+        }
+        else{
+            mvwprintw(task_win, y - 1, 20, "%s", "non-finished");
+        }
+         
     }
-
     wrefresh(task_win);
     // getch();  // Wait for user input before returning to menu
 }
 
-void delet_today_tasks (WINDOW *input_element_win, std::map<std::string, std::vector<std::string>>& tasks, std::string CURR_TIME){
+void delet_today_tasks (WINDOW *input_element_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME){
     char password[100];
     box(input_element_win, 0,0);
     mvwprintw(input_element_win, 1, 1, "permission checking, please input your password");
@@ -198,7 +245,7 @@ void delet_today_tasks (WINDOW *input_element_win, std::map<std::string, std::ve
         mvwprintw(input_element_win, 1, 1, "you don't have the permission to delete all the tasks");
     }
     wrefresh(input_element_win);
-    napms(1000);
+    napms(WAIT_TIME);
     wclear(input_element_win);
     // napms(3000);
     // wrefresh(input_element_win);
@@ -206,7 +253,7 @@ void delet_today_tasks (WINDOW *input_element_win, std::map<std::string, std::ve
 }
 
 // Function to delete a task
-void delete_one_task(WINDOW *input_element_win,  std::map<std::string, std::vector<std::string>>& tasks, std::string CURR_TIME) {
+void delete_one_task(WINDOW *input_element_win,  std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME) {
     char task_num[100];
     box(input_element_win, 0,0);
     mvwprintw(input_element_win,1, 1, "Delete which task: ");
@@ -230,14 +277,14 @@ void delete_one_task(WINDOW *input_element_win,  std::map<std::string, std::vect
          
     }
     wrefresh(input_element_win);
-    napms(1000);
+    napms(WAIT_TIME);
     wclear(input_element_win);
     wrefresh(input_element_win);
 }
 
 int main(int argc, char **argv) {
     std::cout <<"Hellow world" << std::endl;
-    std::map<std::string, std::vector<std::string>> tasks; 
+    std::map<std::string, std::vector<std::pair<std::string, bool>>> tasks;
     // tasks["2024-08-18"] = {"task1", "task2"};
 
     std::vector<std::string> menu = {"Show today tasks", "Add a task", "Remove a task", "Mark as finished", "Mark as unfinished", "Delete today tasks", "Leave"};
@@ -313,7 +360,10 @@ int main(int argc, char **argv) {
                 wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
                 break;
             case MarkAsFinished:
-                std::cout << "Marking a task as finished." << std::endl;
+                mark_as_finished(input_element_win, tasks, CURR_TIME);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
                 break;
             case MarkAsUnfinished:
                 std::cout << "Marking a task as unfinished." << std::endl;
