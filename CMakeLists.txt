@@ -19,5 +19,11 @@ target_link_libraries(yuzhench_time_schedule ${CURSES_LIBRARIES})
 
 # Install the executable in /usr/local/bin
 install(TARGETS yuzhench_time_schedule DESTINATION /usr/local/bin)
+# Install the source code in /usr/local/source
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/ 
+        DESTINATION /usr/local/src/yuzhench_time_schedule
+        FILES_MATCHING PATTERN "*.cpp" PATTERN "*.h")
 
- 
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/ 
+        DESTINATION /usr/local/src/yuzhench_time_schedule
+        FILES_MATCHING PATTERN "*.txt")

@@ -18,8 +18,13 @@ enum MenuOption {
     RemoveTask,
     MarkAsFinished,
     MarkAsUnfinished,
+    ModifyOneTask,
     DeleteAll,
-    Leave
+    ShowAllHistory,
+    SwitchToOtherDay,
+    Leave,
+    Save,
+    Delay
 };
 
 char PASSWORD[100] = "cyz030518";
@@ -138,6 +143,7 @@ void add_task(WINDOW *input_win, std::map<std::string, std::vector<std::pair<std
 
 // Function to display the welcome page
 enum MenuOption show_welcome_page(WINDOW *menu_win, std::vector<std::string> menu) {
+    char input[10]; 
     wclear(menu_win);
     int choice = 0;
     
@@ -151,13 +157,28 @@ enum MenuOption show_welcome_page(WINDOW *menu_win, std::vector<std::string> men
         mvwprintw(menu_win, y++, 1, "%d. %s", i + 1, menu[i].c_str());
     }
 
+    mvwprintw(menu_win, 5, 50,  "S. Save");
+    mvwprintw(menu_win, 6, 50,  "D. Delay");
+     
+
     mvwprintw(menu_win, y + 1, 1, "Enter your choice (1-%d): ", menu.size());  // 提示用户选择
 
     wrefresh(menu_win);  // 刷新窗口
 
-    choice = getch() - '0';  // 获取用户输入并转换为数字
+    wgetnstr(menu_win, input, sizeof(input) - 1);
 
-    if (choice >= 1 && choice <= menu.size()) {
+    if (input[0] == 's'){
+        choice = 11;
+    }
+    else if (input[0] == 'd'){
+        choice = 12;
+    }
+    else{
+        choice = std::stoi(std::string(input));
+    }
+     
+
+    if (choice >= 1 && choice <= menu.size() + 2) {
         return static_cast<MenuOption>(choice - 1);  // 用户输入有效，退出循环
     } 
     else {
@@ -222,6 +243,9 @@ void mark_as_unfinished(WINDOW *input_win, std::map<std::string, std::vector<std
  
 
 void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME) {
+    init_pair(1, COLOR_GREEN, COLOR_BLACK);  // Green text on black background
+    init_pair(2, COLOR_RED, COLOR_BLACK);  // Green text on black background
+
     wclear(task_win);
     box(task_win,0,0);
     mvwprintw(task_win, 1, 1,(get_current_date() + " Tasks:").c_str());
@@ -235,13 +259,22 @@ void show_tasks(WINDOW *task_win, std::map<std::string, std::vector<std::pair<st
     mvwprintw(task_win,1,35, "total_taskes: %d", tasks[CURR_TIME].size());
 
     for (int i = 0; i < tasks[CURR_TIME].size(); ++i) {
-        mvwprintw(task_win, y++, 1, "%d. %s", i + 1, tasks[CURR_TIME][i].first.c_str());
         if (tasks[CURR_TIME][i].second){
-            mvwprintw(task_win, y - 1, 20, "%s", "finished");
+            wattron(task_win, COLOR_PAIR(1));  // Assuming green text is in pair 1
+            mvwprintw(task_win, y++, 1, "%d. %s", i + 1, tasks[CURR_TIME][i].first.c_str());
+            mvwprintw(task_win, y - 1, 70, "%s", "finished");
+            wattroff(task_win, COLOR_PAIR(1));  // Turn off green color pair
+
         }
         else{
-            mvwprintw(task_win, y - 1, 20, "%s", "non-finished");
+            wattron(task_win, COLOR_PAIR(2));  // Assuming green text is in pair 1
+            mvwprintw(task_win, y++, 1, "%d. %s", i + 1, tasks[CURR_TIME][i].first.c_str());
+            mvwprintw(task_win, y - 1, 70, "%s", "non-finished");
+            wattroff(task_win, COLOR_PAIR(2));  // Turn off green color pair
+
         }
+
+        y+= 2;
          
     }
     wrefresh(task_win);
@@ -307,12 +340,138 @@ void delete_one_task(WINDOW *input_element_win,  std::map<std::string, std::vect
     wrefresh(input_element_win);
 }
 
+float get_finished_rate(int finished_tasks, int total_tasks){
+    return (float(finished_tasks) / total_tasks ) * 100;
+}
+void show_all_history(WINDOW *task_win,  std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks){
+    wclear(task_win);
+    wrefresh(task_win);
+
+    mvwprintw(task_win, 1, 1, "All history tasks: ");
+
+
+    int y = 3;
+    int i = 1;
+    for(const auto& one_day_task : tasks){
+        int curr_finished_task_num = 0;
+        if (one_day_task.second.size() > 0){
+            for(const auto& task_name_and_finished : one_day_task.second){
+                if(task_name_and_finished.second == true ){
+                    curr_finished_task_num++; 
+                }
+            }
+        }
+        else {
+            curr_finished_task_num = 0;
+        }
+         
+        float finished_rate = get_finished_rate(curr_finished_task_num,one_day_task.second.size() );
+        mvwprintw(task_win, y++, 1, "day %s  task number: %d  finished_rate: %.2f %%", one_day_task.first.c_str(), one_day_task.second.size(), finished_rate);
+        wrefresh(task_win);
+    }
+}
+
+void modify_one_task(WINDOW *input_element_win,  std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string CURR_TIME){
+    char task_num[100];
+    char modified_task[100];
+    box(input_element_win, 0,0);
+    mvwprintw(input_element_win,1, 1, "modify which task: ");
+    wrefresh(input_element_win);
+
+    wgetnstr(input_element_win, task_num, sizeof(task_num) - 1);
+    int task_index = std::stoi(task_num);
+    
+    if (task_index >= 1 && task_index <= tasks[CURR_TIME].size()) {
+        wclear(input_element_win);
+        wrefresh(input_element_win);
+        box(input_element_win, 0,0);
+        mvwprintw(input_element_win,1, 1, "the modified task: ");
+        wgetnstr(input_element_win, modified_task,sizeof(modified_task) - 1);
+        tasks[CURR_TIME][task_index-1].first = std::string(modified_task);
+         
+    } else {
+        wclear(input_element_win);
+        wrefresh(input_element_win);
+        box(input_element_win, 0,0);
+        mvwprintw(input_element_win,1, 1, "you type the wrong task index! ");
+         
+    }
+    wclear(input_element_win);
+}
+
+void switch_to_certain_day_tasks(WINDOW *input_element_win,  std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks, std::string &CURR_TIME){
+    char certain_day[100];
+    box(input_element_win, 0,0);
+    mvwprintw(input_element_win,1, 1, "switch to which day: ");
+    wrefresh(input_element_win);
+
+    wgetnstr(input_element_win, certain_day, sizeof(certain_day) - 1);
+    std::string day_string = std::string(certain_day);
+    
+    if (tasks.find(day_string) != tasks.end()) {
+        wclear(input_element_win);
+        wrefresh(input_element_win);
+        box(input_element_win, 0,0);
+        mvwprintw(input_element_win,1, 1, ("switch to day: " + day_string).c_str());
+        wrefresh(input_element_win);
+        napms(1000);
+        CURR_TIME = day_string;
+        
+    } else {
+        wclear(input_element_win);
+        wrefresh(input_element_win);
+        box(input_element_win, 0,0);
+        mvwprintw(input_element_win,1, 1, "you type the wrong day");
+        wrefresh(input_element_win);
+        napms(1000);
+         
+    }
+    wclear(input_element_win);
+}
+
+void save_current_state(WINDOW *input_element_win){
+    box(input_element_win, 0,0);
+    mvwprintw(input_element_win,1, 1, "successfully save the current status");
+    wrefresh(input_element_win);
+    napms(1000);
+    wclear(input_element_win);
+}
+
+void delay_yesterday_task(WINDOW *input_element_win,  std::map<std::string, std::vector<std::pair<std::string, bool>>>& tasks){
+    char target_day[100];
+    char dest_day[100];
+    box(input_element_win, 0,0);
+    mvwprintw(input_element_win,1, 1, "delay from which day: ");
+    wrefresh(input_element_win);
+    wgetnstr(input_element_win, target_day, sizeof(target_day) - 1);
+    wclear(input_element_win),
+    box(input_element_win, 0,0);
+    mvwprintw(input_element_win, 1,1, ("delay from " + std::string(target_day)).c_str());
+    mvwprintw(input_element_win, 3,1, "To: ");
+    wrefresh(input_element_win);
+    wgetnstr(input_element_win, dest_day, sizeof(dest_day) - 1);
+    mvwprintw(input_element_win, 5,1, "%s", std::string(dest_day));
+    wrefresh(input_element_win);
+
+    //change the dictionary content
+    std::vector<std::pair<std::string, bool>> delayed_tasks; 
+
+
+    for (auto &task_pair : tasks[std::string(target_day)]){
+        if (task_pair.second == false){
+            delayed_tasks.push_back(task_pair);
+        }
+    }
+
+ 
+    tasks[std::string(dest_day)].insert(tasks[std::string(dest_day)].end(), delayed_tasks.begin(), delayed_tasks.end());
+}
 int main(int argc, char **argv) {
     std::cout <<"Hellow world" << std::endl;
     std::map<std::string, std::vector<std::pair<std::string, bool>>> tasks;
     // tasks["2024-08-18"] = {"task1", "task2"};
 
-    std::vector<std::string> menu = {"Show today tasks", "Add a task", "Remove a task", "Mark as finished", "Mark as unfinished", "Delete today tasks", "Leave"};
+    std::vector<std::string> menu = {"Show today tasks", "Add a task", "Remove a task", "Mark as finished", "Mark as unfinished", "Modify one task", "Delete today tasks", "Show all history", "Switch to other day","Leave"};
 
     std::string get_current_date(); 
     std::string CURR_TIME = get_current_date();
@@ -326,6 +485,9 @@ int main(int argc, char **argv) {
     // noecho();
     // cbreak();
 
+    start_color();  // Start color functionality
+    // Define color pairs
+ 
 
     //define the size of the window
     int height = LINES;  
@@ -338,7 +500,7 @@ int main(int argc, char **argv) {
 
     // 计算窗口的起始位置，使其居中
     int starty = (height - win_height) / 2;
-    int startx = (width * 2 - win_width) / 2;
+    int startx = (width  - win_width);
 
     WINDOW *input_element_win = newwin(win_height, win_width, starty, startx);
 
@@ -395,7 +557,13 @@ int main(int argc, char **argv) {
                 wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
                 show_tasks(task_win, tasks, CURR_TIME);
                 wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
-                break;                break;
+                break;
+            case ModifyOneTask:
+                modify_one_task(input_element_win, tasks, CURR_TIME);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
+                break;
             case DeleteAll:
                 delet_today_tasks(input_element_win,tasks, CURR_TIME);
                 refresh();
@@ -406,9 +574,28 @@ int main(int argc, char **argv) {
                 // delwin(input_element_win); // 删除窗口
                 // input_element_win = nullptr; // 确保指针被设置为nullptr防止悬挂引用
                 break;
+            case ShowAllHistory:
+                show_all_history(task_win, tasks);
+                break;
+            case SwitchToOtherDay:
+                switch_to_certain_day_tasks(input_element_win, tasks, CURR_TIME);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
+                break;
             case Leave:
                 // save_tasks(tasks, "src/history.txt");
                 running = false;
+                break;
+            case Save:
+                save_current_state(input_element_win);
+                save_tasks(tasks, filePath);
+                break;
+            case Delay:
+                delay_yesterday_task(input_element_win, tasks);
+                wrefresh(menu_win); // 确保 menu_win 在窗口删除前刷新
+                show_tasks(task_win, tasks, CURR_TIME);
+                wrefresh(task_win); // 确保 task_win 在窗口删除前刷新
                 break;
             default:
                 std::cout << "Invalid choice." << std::endl;

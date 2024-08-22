@@ -1,2 +1,5 @@
 2024-08-18:task1;0
-2024-08-19:task1;0,task2;0,task3;0
+2024-08-19:task1;0,task3;1
+2024-08-20:watch the ece408 recording lecture 3;0,curobo input sparrows environment files;0,solve trajopt rviz GUI problem ;1,calender: add modify functionality;1,calender: fix the task line limitation ;0,calender: change the show task format ;1,calender: print all history show the finish rate ;1,calender: can switch to other day ;1
+2024-08-21:calender: funactionality add -> move the old task to new day;1,calender: seperate the new task and old moved task;0,trajopt: find the velocity ;0,trajopt: change the input environment ;0,curobo: change the input environment ;0,calender: add the save functionality in the different col ;1
+2024-08-22:calender: show the origion or delayed (from which day);0,calender: when delay, choose delay all unfinished or special ;0

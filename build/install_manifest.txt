@@ -1,1 +1,3 @@
 /usr/local/bin/yuzhench_time_schedule
+/usr/local/src/yuzhench_time_schedule/functionality.cpp
+/usr/local/src/yuzhench_time_schedule/history.txt
